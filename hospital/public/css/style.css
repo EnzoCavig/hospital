@@ -1,0 +1,85 @@
+/* Escondendo todas as perguntas por padrão */
+.pergunta {
+    display: none;
+    margin-bottom: 20px;
+}
+
+/* Contêiner das opções */
+.resposta-escala {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 400px;
+    margin: 10px 0;
+}
+
+/* Estilizando cada item da escala */
+.escala-item {
+    display: block;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 5px;
+    font-weight: bold;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+/* Diferentes cores para cada valor da escala */
+.escala-0 {
+    background-color: #d73027;
+}
+
+.escala-1 {
+    background-color: #f46d43;
+}
+
+.escala-2 {
+    background-color: #fdae61;
+}
+
+.escala-3 {
+    background-color: #fee08b;
+}
+
+.escala-4 {
+    background-color: #d9ef8b;
+}
+
+.escala-5 {
+    background-color: #a6d96a;
+}
+
+.escala-6 {
+    background-color: #66bd63;
+}
+
+.escala-7 {
+    background-color: #1a9850;
+}
+
+.escala-8 {
+    background-color: #91cf60;
+}
+
+.escala-9 {
+    background-color: #4575b4;
+}
+
+.escala-10 {
+    background-color: #313695;
+}
+
+/* Esconder os botões de rádio */
+input[type="radio"] {
+    display: none;
+}
+
+/* Estilizar o rótulo selecionado */
+input[type="radio"]:checked+.escala-item {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
+    background-color: #000;
+    /* Destaque para a opção selecionada */
+}
