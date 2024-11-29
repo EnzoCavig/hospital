@@ -1,8 +1,7 @@
 <?php
 
-require_once __DIR__ . '/../config.php'; // Certifique-se de que o arquivo config.php está correto
+require_once __DIR__ . '/../config.php';
 
-// Verifica se o método é POST e se as respostas e outros parâmetros foram enviados
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['respostas']) && isset($_POST['id_setor']) && isset($_POST['id_dispositivo'])) {
 
     $respostas = $_POST['respostas'];
@@ -10,22 +9,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['respostas']) && isset
     $id_dispositivo = $_POST['id_dispositivo'];
 
     try {
-        $db = getDBConnection(); // Conexão com o banco de dados
-        $db->beginTransaction(); // Iniciar uma transação
+        $db = getDBConnection();
+        $db->beginTransaction();
 
-        // Prepare a query para inserir as respostas no banco de dados
         $stmt = $db->prepare("
             INSERT INTO avaliacoes (id_setor, id_dispositivo, id_pergunta, resposta, feedback_textual, data_hora)
             VALUES (:id_setor, :id_dispositivo, :id_pergunta, :resposta, :feedback_textual, NOW())
         ");
 
-        // Iterar sobre as respostas enviadas
         foreach ($respostas as $id_pergunta => $resposta_dados) {
-            // Captura a nota e o comentário, se houver
             $nota = isset($resposta_dados['nota']) ? $resposta_dados['nota'] : null;
             $comentario = isset($resposta_dados['comentario']) ? $resposta_dados['comentario'] : '';
 
-            // Executa a query para salvar a resposta e o comentário
             $stmt->execute([
                 ':id_setor' => $id_setor,
                 ':id_dispositivo' => $id_dispositivo,
@@ -35,9 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['respostas']) && isset
             ]);
         }
 
-        $db->commit(); // Confirma a transação
+        $db->commit();
 
-        // Mostra a página de agradecimento com o rodapé
         echo "
 <html>
 <head>
@@ -88,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['respostas']) && isset
 </html>
 ";
     } catch (PDOException $e) {
-        $db->rollBack(); // Reverte a transação em caso de erro
+        $db->rollBack();
         echo "Erro ao salvar respostas: " . $e->getMessage();
     }
 } else {
@@ -99,7 +93,6 @@ function registrarAvaliacao($id_dispositivo, $id_pergunta, $resposta, $feedback_
 {
     include 'db.php';
 
-    // Descobrir o setor baseado no dispositivo
     $sql = "SELECT id_setor FROM dispositivos WHERE id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id_dispositivo);
@@ -109,7 +102,6 @@ function registrarAvaliacao($id_dispositivo, $id_pergunta, $resposta, $feedback_
     $stmt->close();
 
     if ($id_setor) {
-        // Inserir avaliação
         $sql = "INSERT INTO avaliacoes (id_setor, id_pergunta, id_dispositivo, resposta, feedback_textual) 
                 VALUES (?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);

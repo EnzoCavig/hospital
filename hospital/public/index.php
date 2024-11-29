@@ -2,15 +2,12 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../src/perguntas.php';
 
-// Verificar o parâmetro "id" na URL
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $idDispositivo = $_GET['id'];
     
-    // Conectar ao banco de dados
     try {
         $pdo = getDBConnection();
 
-        // Buscar o setor associado ao dispositivo
         $stmt = $pdo->prepare("SELECT id_setor FROM dispositivos WHERE id = :id_dispositivo");
         $stmt->bindParam(':id_dispositivo', $idDispositivo, PDO::PARAM_INT);
         $stmt->execute();
@@ -23,7 +20,6 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
 
         $idSetor = $dispositivo['id_setor'];
 
-        // Buscar perguntas relacionadas ao setor do dispositivo
         $perguntas = getPerguntasPorSetor($idSetor);
 
     } catch (PDOException $e) {
@@ -76,7 +72,6 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
 </head>
 
 <body>
-    <!-- Tela de introdução -->
     <div class="inicio-container" id="inicio-container">
         <h1>Bem-vindo à Avaliação de Serviços</h1>
         <p>Por favor, clique no botão abaixo para iniciar sua avaliação.</p>
@@ -84,7 +79,6 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         <button id="admin-btn" onclick="painelAdministrativo()">Painel Administrativo</button>
     </div>
 
-    <!-- Formulário de perguntas, escondido inicialmente -->
     <div class="perguntas-container" id="perguntas-container">
         <h1>Avaliação de Serviços</h1>
         <form id="avaliacao-form" action="../src/respostas.php" method="POST">
@@ -127,22 +121,18 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         }
 
         function painelAdministrativo() {
-            window.location.href = "admin.php"; // Redireciona para a página de administração
+            window.location.href = "admin.php";
         }
 
-        // Função para selecionar uma nota
         function selecionarNota(perguntaId, nota) {
-            // Remover a classe 'selected' apenas dos botões da pergunta atual
             const perguntaAtual = document.querySelector(`#pergunta-${perguntaId}`);
             perguntaAtual.querySelectorAll('.avaliacao-btn').forEach(btn => btn.classList.remove('selected'));
 
-            // Adicionar a classe 'selected' ao botão clicado
             const btnSelecionado = perguntaAtual.querySelector(`.avaliacao-btn[data-value="${nota}"]`);
             if (btnSelecionado) {
                 btnSelecionado.classList.add('selected');
             }
 
-            // Atualizar o valor do campo hidden correspondente
             const inputNota = document.getElementById(`nota-${perguntaId}`);
             if (inputNota) {
                 inputNota.value = nota;
@@ -150,27 +140,22 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         }
 
         document.addEventListener("DOMContentLoaded", function() {
-            let perguntaAtual = 0; // Índice da pergunta atual
-            const perguntas = document.querySelectorAll('.pergunta'); // Todas as perguntas
-            const btnProximo = document.getElementById('proximo-btn'); // Botão "Avançar"
-            const btnEnviar = document.getElementById('enviar-btn'); // Botão "Enviar"
+            let perguntaAtual = 0; 
+            const perguntas = document.querySelectorAll('.pergunta'); 
+            const btnProximo = document.getElementById('proximo-btn'); 
+            const btnEnviar = document.getElementById('enviar-btn'); 
 
-            // Exibe apenas a pergunta atual
             function mostrarPergunta(index) {
                 perguntas.forEach((pergunta, i) => {
-                    // Exibe a pergunta atual, oculta as outras
                     pergunta.style.display = i === index ? 'block' : 'none';
 
-                    // Remove a classe 'selected' de todos os botões de nota
                     const botoesNota = pergunta.querySelectorAll('.avaliacao-btn');
                     botoesNota.forEach(btn => btn.classList.remove('selected'));
                 });
             }
 
-            // Inicializa a exibição da primeira pergunta
             mostrarPergunta(perguntaAtual);
 
-            // Evento de clique nos botões de nota
             perguntas.forEach((pergunta) => {
                 const botoesNota = pergunta.querySelectorAll('.avaliacao-btn');
                 botoesNota.forEach((botao) => {
@@ -178,25 +163,21 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                         const nota = botao.getAttribute('data-value');
                         const campoHidden = pergunta.querySelector('input[type="hidden"]');
 
-                        // Atualiza o valor do campo hidden
                         if (campoHidden) {
                             campoHidden.value = nota;
                             console.log(`Nota registrada para pergunta ${pergunta.id}: ${nota}`);
                         }
 
-                        // Atualiza a aparência visual
                         botoesNota.forEach(btn => btn.classList.remove('selected'));
                         botao.classList.add('selected');
                     });
                 });
             });
 
-            // Validação ao clicar no botão "Avançar"
             btnProximo.addEventListener('click', function() {
                 const perguntaAtualElemento = perguntas[perguntaAtual];
                 const campoHidden = perguntaAtualElemento.querySelector('input[type="hidden"]');
 
-                // Verificar valor do campo hidden
                 if (!campoHidden || !campoHidden.value) {
                     alert("Por favor, selecione uma nota antes de avançar.");
                     return;
@@ -204,12 +185,10 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
 
                 console.log(`Pergunta ${perguntaAtual} respondida com nota: ${campoHidden.value}`);
 
-                // Avança para a próxima pergunta
                 perguntaAtual++;
                 if (perguntaAtual < perguntas.length) {
                     mostrarPergunta(perguntaAtual);
                 } else {
-                    // Última pergunta - exibe botão de envio
                     btnProximo.style.display = 'none';
                     btnEnviar.style.display = 'block';
                 }

@@ -1,19 +1,14 @@
 document.addEventListener("DOMContentLoaded", function() {
- // Função para selecionar uma nota
 function selecionarNota(perguntaId, nota) {
-    // Seleciona todos os botões da pergunta atual e remove a classe "selected"
     const botoes = document.querySelectorAll(`#pergunta-${perguntaId} .avaliacao-btn`);
     botoes.forEach(btn => btn.classList.remove('selected'));
 
-    // Adiciona a classe "selected" ao botão clicado
     const btnSelecionado = document.querySelector(`#pergunta-${perguntaId} .avaliacao-btn[data-value="${nota}"]`);
     btnSelecionado.classList.add('selected');
 
-    // Atualiza o valor do campo hidden com a nota selecionada
     document.getElementById(`nota-${perguntaId}`).value = nota;
 }
 
-// Gerenciar avanço das perguntas
 document.addEventListener("DOMContentLoaded", function () {
     let perguntaAtual = 0;
     const perguntas = document.querySelectorAll('.pergunta');
@@ -21,12 +16,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const btnEnviar = document.getElementById('enviar-btn');
 
     function mostrarPergunta(index) {
-        // Esconde todas as perguntas, exceto a atual
         perguntas.forEach((pergunta, i) => {
             pergunta.style.display = (i === index) ? 'block' : 'none';
         });
 
-        // Garante que as bordas dos botões não carreguem seleções erradas
         const botoesSelecionados = document.querySelectorAll('.avaliacao-btn.selected');
         botoesSelecionados.forEach(btn => btn.classList.remove('selected'));
     }

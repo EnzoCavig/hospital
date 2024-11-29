@@ -5,16 +5,14 @@
     require_once __DIR__ . '/../src/funcoes.php';
     session_start();
 
-    // Verifica se o usuário está autenticado
     if (!isset($_SESSION['usuario'])) {
-        header("Location: login.php"); // Redireciona para a tela de login
+        header("Location: login.php");
         exit;
     }
 
     // Conexão com o banco de dados
     $pdo = getDBConnection();
 
-    // Cadastrar dispositivo
     if (isset($_POST['cadastrar_dispositivo'])) {
         $nome = sanitizeInput($_POST['nome']);
         $id_setor = (int) $_POST['id_setor'];
@@ -22,7 +20,6 @@
         $mensagem = cadastrarDispositivo($pdo, $nome, $id_setor);
         echo "<p>$mensagem</p>";
     }
-    // Gerenciamento de perguntas
     if (isset($_POST['cadastrar_pergunta'])) {
         $texto = sanitizeInput($_POST['texto']);
         $id_setor = (int) $_POST['id_setor_pergunta'];
@@ -37,24 +34,20 @@
     } elseif (isset($_POST['excluir_pergunta'])) {
         $id = (int) $_POST['id_pergunta'];
 
-        // Verificar dependências antes de excluir
         $stmtCheck = $pdo->prepare("SELECT COUNT(*) AS total FROM avaliacoes WHERE id_pergunta = ?");
         $stmtCheck->execute([$id]);
         $dependencias = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
         if ($dependencias['total'] > 0) {
-            // Desativar pergunta
             $stmt = $pdo->prepare("UPDATE perguntas SET status = false WHERE id = ?");
             $stmt->execute([$id]);
             echo "<p>Pergunta desativada com sucesso.</p>";
         } else {
-            // Excluir pergunta
             $stmt = $pdo->prepare("DELETE FROM perguntas WHERE id = ?");
             $stmt->execute([$id]);
         }
     }
 
-    // Obter perguntas para listagem
     $setorPerguntas = [];
     if (isset($_GET['id_setor_perguntas'])) {
         $id_setor = (int) $_GET['id_setor_perguntas'];
@@ -112,7 +105,6 @@
 
     <body>
         <h1>Administração</h1>
-        <!-- Seletor de Setor para Gerar Relatório -->
         <h2>Gerar Gráfico por Setor</h2>
         <form id="form-relatorio">
             <label for="setor-relatorio">Selecione o Setor:</label>
@@ -127,7 +119,6 @@
 
         <canvas id="grafico-avaliacoes" width="400" height="200"></canvas>
 
-        <!-- Formulário de Cadastro de Dispositivo -->
         <h2>Cadastrar Dispositivo</h2>
         <form id="form-cadastro" action="" method="POST">
             <label for="nome">Nome do Dispositivo:</label>
@@ -144,7 +135,6 @@
             <button type="submit" name="cadastrar_dispositivo">Cadastrar</button>
         </form>
 
-        <!-- Formulário de Cadastro de Pergunta -->
         <h2>Cadastrar Nova Pergunta</h2>
         <form action="admin.php" method="POST">
             <label for="texto">Texto da Pergunta:</label>
@@ -161,7 +151,6 @@
             <button type="submit" name="cadastrar_pergunta">Cadastrar Pergunta</button>
         </form>
 
-        <!-- Gerenciamento de Perguntas -->
         <h2>Gerenciar Perguntas</h2>
         <form id="form-seletor-perguntas" method="GET">
             <label for="setor-perguntas">Selecione o Setor:</label>
@@ -176,7 +165,6 @@
         </form>
 
         <?php if (!empty($setorPerguntas)): ?>
-            <!-- Formulário de Listagem e Edição -->
             <table>
                 <tr>
                     <th>ID</th>
@@ -220,7 +208,6 @@
             }
 
             try {
-                // Requisição para obter dados do gráfico
                 const response = await fetch(`dados_grafico.php?id_setor=${idSetor}`);
                 const dados = await response.json();
 
@@ -229,7 +216,6 @@
                     return;
                 }
 
-                // Processar os dados para o gráfico
                 const perguntas = {};
                 const todasRespostas = new Set();
 
@@ -246,16 +232,14 @@
                     todasRespostas.add(resposta);
                 });
 
-                // Ordenar respostas
                 const respostasOrdenadas = Array.from(todasRespostas).sort((a, b) => a - b);
 
-                // Criar datasets com cores distintas
                 const cores = [
-                    'rgba(75, 192, 192, 0.6)', // Verde claro
-                    'rgba(54, 162, 235, 0.6)', // Azul
-                    'rgba(255, 206, 86, 0.6)', // Amarelo
-                    'rgba(255, 99, 132, 0.6)', // Vermelho
-                    'rgba(153, 102, 255, 0.6)' // Roxo
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(153, 102, 255, 0.6)'
                 ];
 
                 const datasets = Object.keys(perguntas).map((pergunta, index) => {
@@ -272,7 +256,6 @@
                     };
                 });
 
-                // Configuração de exibição dos valores nas barras
                 const plugins = {
                     id: 'valores',
                     afterDatasetsDraw(chart) {
@@ -295,7 +278,6 @@
                     }
                 };
 
-                // Atualizar ou criar gráfico
                 if (chart) {
                     chart.data.labels = respostasOrdenadas.map(r => `Nota ${r}`);
                     chart.data.datasets = datasets;
@@ -425,7 +407,7 @@
 
                     if (response.ok) {
                         const row = button.closest('tr');
-                        row.remove(); // Remove a linha da tabela visualmente
+                        row.remove();
                         alert('Pergunta excluída com sucesso.');
                     } else {
                         alert('Erro ao excluir a pergunta.');

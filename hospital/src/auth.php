@@ -1,5 +1,4 @@
 <?php
-// src/auth.php
 require_once 'db.php';
 
 function autenticar($login, $senha) {

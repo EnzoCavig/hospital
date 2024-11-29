@@ -1,12 +1,10 @@
 <?php
-// src/perguntas.php
 require_once 'db.php';
 
 function getPerguntasPorSetor($idSetor) {
     global $pdo;
 
     try {
-        // Remover o filtro de 'ativo' já que não existe essa coluna
         $stmt = $pdo->prepare("SELECT * FROM perguntas WHERE id_setor = :id_setor");
         $stmt->bindParam(':id_setor', $idSetor, PDO::PARAM_INT);
         $stmt->execute();
