@@ -2,11 +2,36 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../src/perguntas.php';
 
-// Buscar perguntas ativas usando a função de perguntas.php
-try {
-    $perguntas = getPerguntas();
-} catch (PDOException $e) {
-    echo "Erro ao buscar perguntas: " . $e->getMessage();
+// Verificar o parâmetro "id" na URL
+if (isset($_GET['id']) && is_numeric($_GET['id'])) {
+    $idDispositivo = $_GET['id'];
+    
+    // Conectar ao banco de dados
+    try {
+        $pdo = getDBConnection();
+
+        // Buscar o setor associado ao dispositivo
+        $stmt = $pdo->prepare("SELECT id_setor FROM dispositivos WHERE id = :id_dispositivo");
+        $stmt->bindParam(':id_dispositivo', $idDispositivo, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $dispositivo = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$dispositivo) {
+            echo "Dispositivo não encontrado.";
+            exit;
+        }
+
+        $idSetor = $dispositivo['id_setor'];
+
+        // Buscar perguntas relacionadas ao setor do dispositivo
+        $perguntas = getPerguntasPorSetor($idSetor);
+
+    } catch (PDOException $e) {
+        echo "Erro ao buscar informações: " . $e->getMessage();
+        exit;
+    }
+} else {
+    echo "Parâmetro id_dispositivo é obrigatório. Por favor, forneça o id_dispositivo na URL.";
     exit;
 }
 ?>
@@ -18,174 +43,183 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Avaliação de Serviços</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/script.js"></script>
     <style>
-        /* Escondendo todas as perguntas por padrão */
-        .pergunta {
+        .inicio-container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .perguntas-container {
             display: none;
         }
 
-        /* Estilização para a escala de notas */
-        .resposta-escala {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-
-        .escala-item {
-            display: inline-block;
-            padding: 10px;
-            background-color: #ddd;
-            border-radius: 5px;
-            text-align: center;
-            width: 40px;
-            cursor: pointer;
-        }
-
-        /* Cores diferentes para cada nota */
-        .escala-0 { background-color: #ff595e; }
-        .escala-1 { background-color: #ff6f61; }
-        .escala-2 { background-color: #ff7858; }
-        .escala-3 { background-color: #ff934f; }
-        .escala-4 { background-color: #ffb347; }
-        .escala-5 { background-color: #ffd046; }
-        .escala-6 { background-color: #ffe156; }
-        .escala-7 { background-color: #d4eb78; }
-        .escala-8 { background-color: #a5d65a; }
-        .escala-9 { background-color: #65bc5d; }
-        .escala-10 { background-color: #3bb273; }
-
-        /* Estilo para o campo de texto */
-        .campo-texto {
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .campo-texto textarea {
-            width: 100%;
-            height: 100px;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-        }
-
-        /* Botões */
-        #proximo-btn, #enviar-btn {
-            margin-top: 20px;
+        #comecar-btn {
             padding: 10px 20px;
-            font-size: 16px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-        #proximo-btn {
-            background-color: #4CAF50;
-            color: white;
-        }
-        #enviar-btn {
-            background-color: #2196F3;
-            color: white;
-        }
+
+        #comecar-btn:hover {
+            background-color: #45a049;
+        }      
     </style>
 </head>
 
 <body>
-    <h1>Avaliação de Serviços</h1>
+    <!-- Tela de introdução -->
+    <div class="inicio-container" id="inicio-container">
+        <h1>Bem-vindo à Avaliação de Serviços</h1>
+        <p>Por favor, clique no botão abaixo para iniciar sua avaliação.</p>
+        <button id="comecar-btn" onclick="comecarAvaliacao()">Começar Avaliação</button>
+        <button id="admin-btn" onclick="painelAdministrativo()">Painel Administrativo</button>
+    </div>
 
-    <form id="avaliacao-form" action="../src/respostas.php" method="POST">
-        <?php if (!empty($perguntas)): ?>
-            <?php foreach ($perguntas as $index => $pergunta): ?>
-                <div class="pergunta" id="pergunta-<?php echo $index; ?>">
-                    <label><?php echo htmlspecialchars($pergunta['texto']); ?></label>
-                    <div class="resposta-escala">
-                        <?php for ($i = 0; $i <= 10; $i++): ?>
-                            <input type="radio" name="respostas[<?php echo $pergunta['id']; ?>][nota]" 
-                                   id="resposta-<?php echo $pergunta['id']; ?>-<?php echo $i; ?>" 
-                                   value="<?php echo $i; ?>" required>
-                            <label for="resposta-<?php echo $pergunta['id']; ?>-<?php echo $i; ?>" class="escala-item escala-<?php echo $i; ?>">
-                                <?php echo $i; ?>
-                            </label>
-                        <?php endfor; ?>
+    <!-- Formulário de perguntas, escondido inicialmente -->
+    <div class="perguntas-container" id="perguntas-container">
+        <h1>Avaliação de Serviços</h1>
+        <form id="avaliacao-form" action="../src/respostas.php" method="POST">
+            <?php if (!empty($perguntas)): ?>
+                <?php foreach ($perguntas as $index => $pergunta): ?>
+                    <div class="pergunta" id="pergunta-<?php echo $index; ?>">
+                        <label><?php echo htmlspecialchars($pergunta['texto']); ?></label>
+                        <div class="resposta-escala">
+                            <?php for ($i = 0; $i <= 10; $i++): ?>
+                                <div class="avaliacao-btn"
+                                    data-value="<?php echo $i; ?>"
+                                    onclick="selecionarNota('<?php echo $pergunta['id']; ?>', <?php echo $i; ?>)">
+                                    <?php echo $i; ?>
+                                </div>
+                            <?php endfor; ?>
+                        </div>
+                        <div class="campo-texto">
+                            <label for="comentario-<?php echo $pergunta['id']; ?>">Comentário (opcional):</label>
+                            <textarea name="respostas[<?php echo $pergunta['id']; ?>][comentario]"
+                                id="comentario-<?php echo $pergunta['id']; ?>"
+                                placeholder="Escreva seu comentário aqui..."></textarea>
+                        </div>
+                        <input type="hidden" id="nota-<?php echo $pergunta['id']; ?>" name="respostas[<?php echo $pergunta['id']; ?>][nota]" required>
                     </div>
-
-                    <!-- Campo de texto opcional para comentário da pergunta -->
-                    <div class="campo-texto">
-                        <label for="comentario-<?php echo $pergunta['id']; ?>">Comentário (opcional):</label>
-                        <textarea name="respostas[<?php echo $pergunta['id']; ?>][comentario]" 
-                                  id="comentario-<?php echo $pergunta['id']; ?>" 
-                                  placeholder="Escreva seu comentário aqui..."></textarea>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-
-            <input type="hidden" name="id_setor" value="1"> <!-- Insira o ID do setor -->
-            <input type="hidden" name="id_dispositivo" value="123"> <!-- Insira o ID do dispositivo -->
-
-            <button type="button" id="proximo-btn">Avançar</button>
-            <button type="submit" id="enviar-btn" style="display: none;">Enviar Avaliação</button>
-        <?php else: ?>
-            <p>Nenhuma pergunta disponível no momento.</p>
-        <?php endif; ?>
-    </form>
+                <?php endforeach; ?>
+                <input type="hidden" name="id_setor" value="<?php echo $idSetor; ?>">
+                <input type="hidden" name="id_dispositivo" value="<?php echo $idDispositivo; ?>">
+                <button type="button" id="proximo-btn">Avançar</button>
+                <button type="submit" id="enviar-btn" style="display: none;">Enviar Avaliação</button>
+            <?php else: ?>
+                <p>Nenhuma pergunta disponível para o setor.</p>
+            <?php endif; ?>
+        </form>
+    </div>
 
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        let perguntaAtual = 0;
-        const perguntas = document.querySelectorAll('.pergunta');
-        const btnProximo = document.getElementById('proximo-btn');
-        const btnEnviar = document.getElementById('enviar-btn');
-        const form = document.getElementById('avaliacao-form');
-
-        // Função para mostrar a pergunta atual e esconder as outras
-        function mostrarPergunta(index) {
-            perguntas.forEach((pergunta, i) => {
-                pergunta.style.display = (i === index) ? 'block' : 'none';
-            });
+        function comecarAvaliacao() {
+            document.getElementById('inicio-container').style.display = 'none';
+            document.getElementById('perguntas-container').style.display = 'block';
         }
 
-        // Mostrar a primeira pergunta ao carregar
-        mostrarPergunta(perguntaAtual);
+        function painelAdministrativo() {
+            window.location.href = "admin.php"; // Redireciona para a página de administração
+        }
 
-        // Avançar para a próxima pergunta
-        btnProximo.addEventListener('click', function() {
-            const radios = perguntas[perguntaAtual].querySelectorAll('input[type="radio"]');
-            let respostaSelecionada = false;
+        // Função para selecionar uma nota
+        function selecionarNota(perguntaId, nota) {
+            // Remover a classe 'selected' apenas dos botões da pergunta atual
+            const perguntaAtual = document.querySelector(`#pergunta-${perguntaId}`);
+            perguntaAtual.querySelectorAll('.avaliacao-btn').forEach(btn => btn.classList.remove('selected'));
 
-            // Verifica se algum rádio foi selecionado
-            radios.forEach(radio => {
-                if (radio.checked) {
-                    respostaSelecionada = true;
-                }
+            // Adicionar a classe 'selected' ao botão clicado
+            const btnSelecionado = perguntaAtual.querySelector(`.avaliacao-btn[data-value="${nota}"]`);
+            if (btnSelecionado) {
+                btnSelecionado.classList.add('selected');
+            }
+
+            // Atualizar o valor do campo hidden correspondente
+            const inputNota = document.getElementById(`nota-${perguntaId}`);
+            if (inputNota) {
+                inputNota.value = nota;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let perguntaAtual = 0; // Índice da pergunta atual
+            const perguntas = document.querySelectorAll('.pergunta'); // Todas as perguntas
+            const btnProximo = document.getElementById('proximo-btn'); // Botão "Avançar"
+            const btnEnviar = document.getElementById('enviar-btn'); // Botão "Enviar"
+
+            // Exibe apenas a pergunta atual
+            function mostrarPergunta(index) {
+                perguntas.forEach((pergunta, i) => {
+                    // Exibe a pergunta atual, oculta as outras
+                    pergunta.style.display = i === index ? 'block' : 'none';
+
+                    // Remove a classe 'selected' de todos os botões de nota
+                    const botoesNota = pergunta.querySelectorAll('.avaliacao-btn');
+                    botoesNota.forEach(btn => btn.classList.remove('selected'));
+                });
+            }
+
+            // Inicializa a exibição da primeira pergunta
+            mostrarPergunta(perguntaAtual);
+
+            // Evento de clique nos botões de nota
+            perguntas.forEach((pergunta) => {
+                const botoesNota = pergunta.querySelectorAll('.avaliacao-btn');
+                botoesNota.forEach((botao) => {
+                    botao.addEventListener('click', function() {
+                        const nota = botao.getAttribute('data-value');
+                        const campoHidden = pergunta.querySelector('input[type="hidden"]');
+
+                        // Atualiza o valor do campo hidden
+                        if (campoHidden) {
+                            campoHidden.value = nota;
+                            console.log(`Nota registrada para pergunta ${pergunta.id}: ${nota}`);
+                        }
+
+                        // Atualiza a aparência visual
+                        botoesNota.forEach(btn => btn.classList.remove('selected'));
+                        botao.classList.add('selected');
+                    });
+                });
             });
 
-            // Se nenhuma opção foi selecionada, mostra um alerta
-            if (!respostaSelecionada) {
-                alert("Por favor, selecione uma nota antes de avançar.");
-                return;
-            }
+            // Validação ao clicar no botão "Avançar"
+            btnProximo.addEventListener('click', function() {
+                const perguntaAtualElemento = perguntas[perguntaAtual];
+                const campoHidden = perguntaAtualElemento.querySelector('input[type="hidden"]');
 
-            perguntaAtual++;
+                // Verificar valor do campo hidden
+                if (!campoHidden || !campoHidden.value) {
+                    alert("Por favor, selecione uma nota antes de avançar.");
+                    return;
+                }
 
-            if (perguntaAtual < perguntas.length) {
-                mostrarPergunta(perguntaAtual);
-            } else {
-                // Se não houver mais perguntas, esconder o botão de avançar e mostrar o de enviar
-                btnProximo.style.display = 'none';
-                btnEnviar.style.display = 'block';
-            }
+                console.log(`Pergunta ${perguntaAtual} respondida com nota: ${campoHidden.value}`);
+
+                // Avança para a próxima pergunta
+                perguntaAtual++;
+                if (perguntaAtual < perguntas.length) {
+                    mostrarPergunta(perguntaAtual);
+                } else {
+                    // Última pergunta - exibe botão de envio
+                    btnProximo.style.display = 'none';
+                    btnEnviar.style.display = 'block';
+                }
+            });
         });
+    </script>
 
-        // Adicionar evento para reiniciar o formulário (opcional, caso necessário)
-        form.addEventListener('submit', function(e) {
-            // Após o envio do formulário, você pode reiniciar as perguntas aqui se necessário.
-            perguntaAtual = 0; // Resetar para a primeira pergunta
-            mostrarPergunta(perguntaAtual);
-            btnProximo.style.display = 'block'; // Mostrar o botão de avançar novamente
-            btnEnviar.style.display = 'none'; // Esconder o botão de enviar novamente
-        });
-    });
-</script>
-    
+    <footer>
+        <p>Sua avaliação é anônima e nenhuma informação pessoal é coletada ou armazenada.</p>
+    </footer>
 </body>
 
 </html>

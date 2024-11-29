@@ -1,6 +1,6 @@
 <?php
 // Configurações do banco de dados
-define('DB_HOST', 'localhost');    // Host do banco de dados (normalmente 'localhost')
+define('DB_HOST', 'localhost');    // Host do banco de dados
 define('DB_NAME', 'hospital');     // Nome do banco de dados
 define('DB_USER', 'postgres');     // Usuário do banco de dados
 define('DB_PASS', 'postgres');     // Senha do banco de dados
