@@ -1,4 +1,3 @@
--- Criação da tabela de avaliações
 CREATE TABLE avaliacoes (
     id SERIAL PRIMARY KEY,
     id_setor INT NOT NULL,
@@ -11,21 +10,18 @@ CREATE TABLE avaliacoes (
     FOREIGN KEY (id_dispositivo) REFERENCES dispositivos(id)
 );
 
--- Criação da tabela de dispositivos
 CREATE TABLE dispositivos (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     status BOOLEAN DEFAULT TRUE
 );
 
--- Criação da tabela de perguntas
 CREATE TABLE perguntas (
     id SERIAL PRIMARY KEY,
     texto TEXT NOT NULL,
     status BOOLEAN DEFAULT TRUE
 );
 
--- Criação da tabela de usuários administrativos
 CREATE TABLE usuarios_administrativos (
     id SERIAL PRIMARY KEY,
     login VARCHAR(50) UNIQUE NOT NULL,
@@ -44,7 +40,7 @@ FROM avaliacoes
 JOIN dispositivos ON avaliacoes.id_dispositivo = dispositivos.id
 JOIN perguntas ON avaliacoes.id_pergunta = perguntas.id
 JOIN setores ON dispositivos.id_setor = setores.id
-WHERE dispositivos.id_setor = 1 -- Exemplo: Filtrar pelo setor "Recepção"
+WHERE dispositivos.id_setor = 1 
 ORDER BY avaliacoes.data_hora DESC;
 
 
